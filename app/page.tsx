@@ -14,7 +14,13 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { boxesQueryOptions, boxesSearchQueryOptions, itemsSearchQueryOptions } from "@/lib/api"
+import {
+  boxesQueryOptions,
+  boxesSearchQueryOptions,
+  createBox,
+  deleteItem as deleteItemApi,
+  itemsSearchQueryOptions,
+} from "@/lib/api"
 
 export default function InventoryPage() {
   const queryClient = useQueryClient()
@@ -47,17 +53,8 @@ export default function InventoryPage() {
   } = useQuery(itemsSearchQuery)
 
   const createBoxMutation = useMutation({
-    mutationFn: async ({ name, description, color }: { name: string; description: string; color: string }) => {
-      const response = await fetch("/api/boxes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, color }),
-      })
-      if (!response.ok) {
-        throw new Error("Failed to create box")
-      }
-      return response.json()
-    },
+    mutationFn: ({ name, description, color }: { name: string; description: string; color: string }) =>
+      createBox({ name, description, color }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })
     },
@@ -67,12 +64,7 @@ export default function InventoryPage() {
   })
 
   const deleteItemMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/items/${id}`, { method: "DELETE" })
-      if (!response.ok) {
-        throw new Error("Failed to delete item")
-      }
-    },
+    mutationFn: (id: string) => deleteItemApi(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["items"], exact: false })
       void queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })

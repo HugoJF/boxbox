@@ -2,12 +2,26 @@ import { queryOptions } from "@tanstack/react-query"
 
 import type { Box, Item } from "@/lib/db/schema"
 
-const fetchJson = async <T>(path: string, init?: RequestInit) => {
+const JSON_HEADERS = { "Content-Type": "application/json" } as const
+
+const fetchOk = async (path: string, init?: RequestInit) => {
   const response = await fetch(path, init)
   if (!response.ok) {
     throw new Error(`${init?.method ?? "GET"} ${path} failed with status ${response.status}`)
   }
+  return response
+}
+
+const fetchJson = async <T>(path: string, init?: RequestInit) => {
+  const response = await fetchOk(path, init)
+  if (response.status === 204) {
+    return undefined as T
+  }
   return (await response.json()) as T
+}
+
+const fetchVoid = async (path: string, init?: RequestInit) => {
+  await fetchOk(path, init)
 }
 
 const withSearch = (base: string, search: string) => {
@@ -58,3 +72,82 @@ export const itemQueryOptions = (itemId: string) =>
     retry: false,
     queryFn: () => fetchJson<Item>(`/api/items/${itemId}`),
   })
+
+export interface CreateBoxPayload {
+  name: string
+  description: string
+  color: string
+}
+
+export interface UpdateBoxPayload {
+  name: string
+  description: string
+  color: string
+}
+
+export const createBox = (payload: CreateBoxPayload) =>
+  fetchJson<Box>("/api/boxes", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+
+export const updateBox = (boxId: string, payload: UpdateBoxPayload) =>
+  fetchJson<Box>(`/api/boxes/${boxId}`, {
+    method: "PATCH",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+
+export const deleteBox = async (boxId: string) => {
+  await fetchVoid(`/api/boxes/${boxId}`, { method: "DELETE" })
+}
+
+export interface AnalyzeItemResponse {
+  name?: string
+  category?: string
+  description?: string
+  quantity?: number
+}
+
+export interface CreateItemPayload {
+  boxId: string
+  name: string
+  category: string
+  description: string
+  quantity: number
+  image: string
+}
+
+export interface UpdateItemPayload {
+  name: string
+  category: string
+  description: string
+  quantity: number
+  boxId: string
+}
+
+export const analyzeItem = (image: string) =>
+  fetchJson<AnalyzeItemResponse>("/api/analyze-item", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ image }),
+  })
+
+export const createItem = (payload: CreateItemPayload) =>
+  fetchJson<Item>("/api/items", {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+
+export const updateItem = (itemId: string, payload: UpdateItemPayload) =>
+  fetchJson<Item>(`/api/items/${itemId}`, {
+    method: "PATCH",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+
+export const deleteItem = async (itemId: string) => {
+  await fetchVoid(`/api/items/${itemId}`, { method: "DELETE" })
+}

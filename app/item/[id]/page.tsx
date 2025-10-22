@@ -20,8 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import type { Item } from "@/lib/db/schema"
-import { boxesQueryOptions, itemQueryOptions } from "@/lib/api"
+import {
+  boxesQueryOptions,
+  deleteItem as deleteItemApi,
+  itemQueryOptions,
+  updateItem as updateItemApi,
+} from "@/lib/api"
 import { toast } from "sonner"
 
 const ITEM_PLACEHOLDER_IMAGE = "/item-placeholder.svg"
@@ -85,25 +89,14 @@ export default function EditItemPage() {
   }, [boxesError, boxesErrorObj])
 
   const updateItemMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/items/${itemId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          category,
-          description,
-          quantity,
-          boxId: selectedBoxId,
-        }),
-      })
-
-      if (!res.ok) {
-        throw new Error("Failed to update item")
-      }
-
-      return (await res.json()) as Item
-    },
+    mutationFn: () =>
+      updateItemApi(itemId, {
+        name,
+        category,
+        description,
+        quantity,
+        boxId: selectedBoxId,
+      }),
     onSuccess: async (updatedItem) => {
       toast.success("Item updated successfully")
 
@@ -124,13 +117,7 @@ export default function EditItemPage() {
   })
 
   const deleteItemMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/items/${itemId}`, { method: "DELETE" })
-
-      if (!res.ok) {
-        throw new Error("Failed to delete item")
-      }
-    },
+    mutationFn: () => deleteItemApi(itemId),
     onSuccess: async () => {
       toast.success("Item deleted successfully")
       await Promise.all([

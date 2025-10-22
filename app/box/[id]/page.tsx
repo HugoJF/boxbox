@@ -23,7 +23,12 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import type { Box, Item } from "@/lib/db/schema"
-import { boxQueryOptions } from "@/lib/api"
+import {
+  boxQueryOptions,
+  deleteBox as deleteBoxApi,
+  deleteItem as deleteItemApi,
+  updateBox as updateBoxApi,
+} from "@/lib/api"
 import { toast } from "sonner"
 
 type BoxWithItems = Box & { items: Item[] }
@@ -70,10 +75,7 @@ export default function BoxDetailPage() {
 
   const deleteItemMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/items/${id}`, { method: "DELETE" })
-      if (!res.ok) {
-        throw new Error("Failed to delete item")
-      }
+      await deleteItemApi(id)
       return id
     },
     onSuccess: (id) => {
@@ -95,17 +97,8 @@ export default function BoxDetailPage() {
   })
 
   const editBoxMutation = useMutation({
-    mutationFn: async ({ name, description, color }: { name: string; description: string; color: string }) => {
-      const res = await fetch(`/api/boxes/${boxId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, color }),
-      })
-      if (!res.ok) {
-        throw new Error("Failed to update box")
-      }
-      return (await res.json()) as Box
-    },
+    mutationFn: ({ name, description, color }: { name: string; description: string; color: string }) =>
+      updateBoxApi(boxId, { name, description, color }),
     onSuccess: (updatedBox) => {
       queryClient.setQueryData<BoxWithItems | undefined>(["box", boxId], (previous) => {
         if (!previous) {
@@ -140,12 +133,7 @@ export default function BoxDetailPage() {
   }
 
   const deleteBoxMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/boxes/${boxId}`, { method: "DELETE" })
-      if (!res.ok) {
-        throw new Error("Failed to delete box")
-      }
-    },
+    mutationFn: () => deleteBoxApi(boxId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })
       toast.success("Box deleted")

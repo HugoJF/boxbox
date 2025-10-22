@@ -1,12 +1,14 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { useMutation } from "@tanstack/react-query"
 import { Camera, X, RotateCcw, Check, SwitchCamera } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { CameraDeviceSelector } from "@/components/camera-device-selector"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { analyzeItem, createItem } from "@/lib/api"
 
 interface CameraCaptureProps {
   onCapture: (imageData: string) => void
@@ -27,6 +29,16 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
   const [showDeviceSelector, setShowDeviceSelector] = useState(false)
   const streamRef = useRef<MediaStream | null>(null)
   const activeDeviceIdRef = useRef<string | null>(null)
+
+  const analyzeItemMutation = useMutation({
+    mutationFn: (image: string) => analyzeItem(image),
+    retry: false,
+  })
+
+  const createItemMutation = useMutation({
+    mutationFn: createItem,
+    retry: false,
+  })
 
   const stopActiveStream = () => {
     if (streamRef.current) {
@@ -188,36 +200,16 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
 
     setIsProcessing(true)
     try {
-      const analyzeResponse = await fetch("/api/analyze-item", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: capturedImage }),
+      const analysis = await analyzeItemMutation.mutateAsync(capturedImage)
+
+      await createItemMutation.mutateAsync({
+        boxId,
+        name: analysis?.name || "Unknown Item",
+        category: analysis?.category || "Uncategorized",
+        description: analysis?.description || "",
+        quantity: analysis?.quantity || 1,
+        image: capturedImage,
       })
-
-      if (!analyzeResponse.ok) {
-        throw new Error("AI analysis failed")
-      }
-
-      const data = await analyzeResponse.json()
-
-      const createResponse = await fetch("/api/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          boxId,
-          name: data.name || "Unknown Item",
-          category: data.category || "Uncategorized",
-          description: data.description || "",
-          quantity: data.quantity || 1,
-          image: capturedImage,
-        }),
-      })
-
-      if (!createResponse.ok) {
-        throw new Error("Failed to create item")
-      }
-
-      await createResponse.json()
       toast.success("Item added successfully")
       onCapture(capturedImage)
     } catch (error) {
@@ -225,24 +217,14 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
 
       // Create item without AI data and redirect to edit page
       try {
-        const fallbackResponse = await fetch("/api/items", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            boxId,
-            name: "New Item",
-            category: "Uncategorized",
-            description: "",
-            quantity: 1,
-            image: capturedImage,
-          }),
+        const newItem = await createItemMutation.mutateAsync({
+          boxId,
+          name: "New Item",
+          category: "Uncategorized",
+          description: "",
+          quantity: 1,
+          image: capturedImage,
         })
-
-        if (!fallbackResponse.ok) {
-          throw new Error("Failed to add item")
-        }
-
-        const newItem = await fallbackResponse.json()
         toast.error("AI analysis failed. Please edit item details manually.")
         router.push(`/item/${newItem.id}`)
       } catch (createError) {
