@@ -211,7 +211,7 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
         image: capturedImage,
       })
       toast.success("Item added successfully")
-      onCapture(capturedImage)
+      router.push(`/box/${boxId}`)
     } catch (error) {
       console.error("[v0] Error processing item:", error)
 
