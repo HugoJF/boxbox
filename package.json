@@ -63,6 +63,7 @@
     "@xata.io/client": "latest",
     "ai": "latest",
     "autoprefixer": "^10.4.20",
+    "axios": "^1.12.2",
     "better-sqlite3": "latest",
     "bun-types": "latest",
     "class-variance-authority": "^0.7.1",
