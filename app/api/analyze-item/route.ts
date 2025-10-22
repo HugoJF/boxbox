@@ -12,9 +12,9 @@ const itemSchema = z.object({
 type AnalyzeItemProfile = "fast" | "balanced" | "high"
 
 const PROFILE_MODEL_MAP: Record<AnalyzeItemProfile, string> = {
-  fast: "openai/chatgpt-4o-latest",
-  balanced: "x-ai/grok-4-fast",
-  high: "openai/gpt-5",
+  fast: "google/gemini-2.5-flash-lite",
+  balanced: "openai/chatgpt-4o-latest",
+  high: "x-ai/grok-4-fast",
 }
 
 const JSON_SCHEMA_UNSUPPORTED_MODELS = new Set<string>(["openai/chatgpt-4o-latest"])
