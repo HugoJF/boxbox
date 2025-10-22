@@ -1,6 +1,6 @@
 import { BoxIcon, Package } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import type { Box } from "@/lib/types"
+import type { Box } from "@/lib/db/schema"
 
 interface BoxCardProps {
   box: Box

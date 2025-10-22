@@ -27,14 +27,20 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
   const [showDeviceSelector, setShowDeviceSelector] = useState(false)
 
   useEffect(() => {
-    const savedDeviceId = localStorage.getItem("preferred-camera-device")
+    const savedDeviceId = typeof window !== "undefined" ? localStorage.getItem("preferred-camera-device") : null
     if (savedDeviceId) {
       setSelectedDeviceId(savedDeviceId)
     }
-    enumerateDevices()
+    void enumerateDevices()
   }, [])
 
   const enumerateDevices = async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) {
+      console.error("[v0] Media devices API unavailable")
+      setError("Camera is not available in this environment.")
+      return
+    }
+
     try {
       const allDevices = await navigator.mediaDevices.enumerateDevices()
       const videoDevices = allDevices.filter((device) => device.kind === "videoinput")
@@ -44,9 +50,12 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
         setShowDeviceSelector(true)
       } else if (!selectedDeviceId && videoDevices.length === 1) {
         setSelectedDeviceId(videoDevices[0].deviceId)
+      } else if (!videoDevices.length) {
+        setError("No camera devices detected.")
       }
     } catch (err) {
       console.error("[v0] Error enumerating devices:", err)
+      setError("Unable to access camera devices.")
     }
   }
 
@@ -62,6 +71,11 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
   }, [selectedDeviceId, showDeviceSelector])
 
   const startCamera = async (deviceId: string) => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setError("Camera is not available in this environment.")
+      return
+    }
+
     try {
       if (stream) {
         stream.getTracks().forEach((track) => track.stop())
@@ -83,7 +97,9 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
 
   const handleDeviceSelect = (deviceId: string) => {
     setSelectedDeviceId(deviceId)
-    localStorage.setItem("preferred-camera-device", deviceId)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("preferred-camera-device", deviceId)
+    }
     setShowDeviceSelector(false)
   }
 
@@ -126,20 +142,19 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
 
     setIsProcessing(true)
     try {
-      const response = await fetch("/api/analyze-item", {
+      const analyzeResponse = await fetch("/api/analyze-item", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: capturedImage }),
       })
 
-      if (!response.ok) {
+      if (!analyzeResponse.ok) {
         throw new Error("AI analysis failed")
       }
 
-      const data = await response.json()
+      const data = await analyzeResponse.json()
 
-      // Create item with AI data
-      const itemResponse = await fetch("/api/items", {
+      const createResponse = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -152,11 +167,11 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
         }),
       })
 
-      if (!itemResponse.ok) {
+      if (!createResponse.ok) {
         throw new Error("Failed to create item")
       }
 
-      const newItem = await itemResponse.json()
+      await createResponse.json()
       toast.success("Item added successfully")
       onCapture(capturedImage)
     } catch (error) {
@@ -164,7 +179,7 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
 
       // Create item without AI data and redirect to edit page
       try {
-        const itemResponse = await fetch("/api/items", {
+        const fallbackResponse = await fetch("/api/items", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -177,14 +192,13 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
           }),
         })
 
-        if (itemResponse.ok) {
-          const newItem = await itemResponse.json()
-          toast.error("AI analysis failed. Please edit item details manually.")
-          router.push(`/item/${newItem.id}`)
-        } else {
-          toast.error("Failed to add item")
-          onCancel()
+        if (!fallbackResponse.ok) {
+          throw new Error("Failed to add item")
         }
+
+        const newItem = await fallbackResponse.json()
+        toast.error("AI analysis failed. Please edit item details manually.")
+        router.push(`/item/${newItem.id}`)
       } catch (createError) {
         console.error("[v0] Error creating item:", createError)
         toast.error("Failed to add item")

@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server"
+
 import { db } from "@/lib/db"
 import { boxes, items } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
+    const { id } = params
     const box = await db.select().from(boxes).where(eq(boxes.id, id)).limit(1)
 
     if (!box.length) {
       return NextResponse.json({ error: "Box not found" }, { status: 404 })
     }
 
-    const boxItems = await db.select().from(items).where(eq(items.boxId, id))
+    const boxItems = await db
+      .select()
+      .from(items)
+      .where(eq(items.boxId, id))
+      .orderBy(desc(items.createdAt))
 
     return NextResponse.json({ ...box[0], items: boxItems })
   } catch (error) {
@@ -21,9 +26,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
+    const { id } = params
     const body = await request.json()
     const { name, description, color } = body
 
@@ -40,9 +45,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
+    const { id } = params
     await db.delete(boxes).where(eq(boxes.id, id))
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -1,106 +1,150 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { BoxIcon, Camera, Plus, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { CameraCapture } from "@/components/camera-capture"
-import { InventoryItem } from "@/components/inventory-item"
-import { EmptyState } from "@/components/empty-state"
-import { BoxCard } from "@/components/box-card"
-import { CreateBoxDialog } from "@/components/create-box-dialog"
-import type { Item, Box } from "@/lib/types"
+import { useState } from "react"
 import Link from "next/link"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { BoxIcon, Camera, ChevronRight, Plus, Search } from "lucide-react"
+
+import { BoxCard } from "@/components/box-card"
+import { CameraCapture } from "@/components/camera-capture"
+import { CreateBoxDialog } from "@/components/create-box-dialog"
+import { EmptyState } from "@/components/empty-state"
+import { InventoryItem } from "@/components/inventory-item"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
+import { boxesQueryOptions, boxesSearchQueryOptions, itemsSearchQueryOptions } from "@/lib/api"
 
 export default function InventoryPage() {
-  const [items, setItems] = useState<Item[]>([])
-  const [boxes, setBoxes] = useState<Box[]>([])
+  const queryClient = useQueryClient()
   const [showCamera, setShowCamera] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showBoxPicker, setShowBoxPicker] = useState(false)
+  const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null)
 
-  useEffect(() => {
-    const storedItems = localStorage.getItem("inventory-items")
-    const storedBoxes = localStorage.getItem("inventory-boxes")
-    if (storedItems) {
-      setItems(JSON.parse(storedItems))
-    }
-    if (storedBoxes) {
-      setBoxes(JSON.parse(storedBoxes))
-    }
-    setIsLoading(false)
-  }, [])
+  const hasSearch = searchQuery.trim().length > 0
 
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem("inventory-items", JSON.stringify(items))
-      localStorage.setItem("inventory-boxes", JSON.stringify(boxes))
-    }
-  }, [items, boxes, isLoading])
+  const {
+    data: boxes = [],
+    isPending: boxesPending,
+    isError: boxesError,
+  } = useQuery(boxesQueryOptions)
 
-  const handlePhotoCapture = async (imageData: string) => {
-    setShowCamera(false)
+  const boxesSearchQuery = boxesSearchQueryOptions(searchQuery)
+  const {
+    data: searchedBoxes = [],
+    isPending: boxesSearchPending,
+    isError: boxesSearchError,
+  } = useQuery(boxesSearchQuery)
 
-    try {
-      const response = await fetch("/api/analyze-item", {
+  const itemsSearchQuery = itemsSearchQueryOptions(searchQuery)
+  const {
+    data: searchedItems = [],
+    isPending: itemsPending,
+    isError: itemsError,
+  } = useQuery(itemsSearchQuery)
+
+  const createBoxMutation = useMutation({
+    mutationFn: async ({ name, description, color }: { name: string; description: string; color: string }) => {
+      const response = await fetch("/api/boxes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: imageData }),
+        body: JSON.stringify({ name, description, color }),
       })
-
-      const data = await response.json()
-
-      const newItem: Item = {
-        id: crypto.randomUUID(),
-        name: data.name || "Unknown Item",
-        category: data.category || "Uncategorized",
-        description: data.description || "",
-        quantity: data.quantity || 1,
-        image: imageData,
-        createdAt: new Date().toISOString(),
+      if (!response.ok) {
+        throw new Error("Failed to create box")
       }
+      return response.json()
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })
+    },
+    onError: (error) => {
+      console.error("[v0] Error creating box:", error)
+    },
+  })
 
-      setItems((prev) => [newItem, ...prev])
+  const deleteItemMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/items/${id}`, { method: "DELETE" })
+      if (!response.ok) {
+        throw new Error("Failed to delete item")
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["items"], exact: false })
+      void queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })
+    },
+    onError: (error) => {
+      console.error("[v0] Error deleting item:", error)
+    },
+  })
+
+  const isLoading = boxesPending || (hasSearch && (boxesSearchPending || itemsPending))
+  const hasError = boxesError || (hasSearch && (boxesSearchError || itemsError))
+
+  const displayBoxes = hasSearch ? searchedBoxes : boxes
+  const displayItems = hasSearch ? searchedItems : []
+
+  const showGlobalEmptyState = !hasSearch && displayBoxes.length === 0
+
+  const handleCreateBox = async (name: string, description: string, color: string) => {
+    try {
+      await createBoxMutation.mutateAsync({ name, description, color })
+      setShowCreateDialog(false)
     } catch (error) {
-      console.error("[v0] Error analyzing item:", error)
+      console.error("[v0] Error creating box:", error)
     }
   }
 
   const handleDeleteItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id))
+    deleteItemMutation.mutate(id)
   }
 
-  const handleUpdateQuantity = (id: string, quantity: number) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, quantity: Math.max(0, quantity) } : item)))
+  const handlePhotoCapture = async (_imageData?: string) => {
+    setShowCamera(false)
+    setSelectedBoxId(null)
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["items"], exact: false }),
+      queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false }),
+    ])
   }
 
-  const handleCreateBox = (name: string, description: string, color: string) => {
-    const newBox: Box = {
-      id: crypto.randomUUID(),
-      name,
-      description,
-      color,
-      itemCount: 0,
-      items: [],
-      createdAt: new Date().toISOString(),
+  const handleCancelCamera = () => {
+    setShowCamera(false)
+    setSelectedBoxId(null)
+  }
+
+  const handleAddItemClick = () => {
+    if (!boxes.length) {
+      setShowCreateDialog(true)
+      return
     }
-    setBoxes((prev) => [newBox, ...prev])
-    setShowCreateDialog(false)
+
+    setSelectedBoxId(null)
+    setShowBoxPicker(true)
   }
 
-  const filteredItems = items.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const handleBoxPickerOpenChange = (open: boolean) => {
+    setShowBoxPicker(open)
+    if (!open && !showCamera) {
+      setSelectedBoxId(null)
+    }
+  }
 
-  const filteredBoxes = boxes.filter(
-    (box) =>
-      box.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      box.description.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const handleBoxSelection = (id: string) => {
+    setSelectedBoxId(id)
+    setShowBoxPicker(false)
+    setShowCamera(true)
+  }
+
+  const handleCreateBoxFromPicker = () => {
+    setShowBoxPicker(false)
+    setSelectedBoxId(null)
+    setShowCreateDialog(true)
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -111,7 +155,7 @@ export default function InventoryPage() {
             <h1 className="text-xl font-semibold">Inventory</h1>
           </div>
           <div className="flex gap-4">
-            <Button size="lg" onClick={() => setShowCamera(true)} className="gap-2">
+            <Button size="lg" onClick={handleAddItemClick} className="gap-2" disabled={boxesPending}>
               <Camera className="h-5 w-5" />
               Add Item
             </Button>
@@ -129,7 +173,7 @@ export default function InventoryPage() {
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search items/boxes..."
+              placeholder="Search boxes or items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-12 text-base"
@@ -137,45 +181,119 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        {filteredBoxes.length === 0 && filteredItems.length === 0 ? (
+        {isLoading ? (
+          <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">Loading inventory…</div>
+        ) : hasError ? (
           <EmptyState
-            icon={searchQuery ? Search : BoxIcon}
-            title={searchQuery ? "No items/boxes found" : "No items/boxes yet"}
-            description={
-              searchQuery
-                ? "Try adjusting your search terms"
-                : "Start by creating your first storage box or adding an item with the camera"
-            }
+            icon={BoxIcon}
+            title="Something went wrong"
+            description="We couldn't load your inventory. Please try again."
+          />
+        ) : showGlobalEmptyState ? (
+          <EmptyState
+            icon={BoxIcon}
+            title="No boxes yet"
+            description="Start by creating your first storage box or adding an item with the camera."
             action={
-              !searchQuery && (
-                <Button size="lg" onClick={() => setShowCreateDialog(true)} className="gap-2">
-                  <Plus className="h-5 w-5" />
-                  Create First Box
-                </Button>
-              )
+              <Button size="lg" onClick={() => setShowCreateDialog(true)} className="gap-2">
+                <Plus className="h-5 w-5" />
+                Create First Box
+              </Button>
             }
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredBoxes.map((box) => (
-              <Link key={box.id} href={`/box/${box.id}`}>
-                <BoxCard box={box} />
-              </Link>
-            ))}
-            {filteredItems.map((item) => (
-              <InventoryItem
-                key={item.id}
-                item={item}
-                onDelete={handleDeleteItem}
-                onUpdateQuantity={handleUpdateQuantity}
-              />
-            ))}
+          <div className="space-y-8">
+            <section className="space-y-4">
+              {hasSearch && (
+                <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Boxes</h2>
+              )}
+              {displayBoxes.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {displayBoxes.map((box) => (
+                    <Link key={box.id} href={`/box/${box.id}`}>
+                      <BoxCard box={box} />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+                  {hasSearch ? "No boxes found for this search." : "No boxes available."}
+                </div>
+              )}
+            </section>
+
+            {hasSearch && (
+              <>
+                <Separator />
+                <section className="space-y-4">
+                  <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Items</h2>
+                  {displayItems.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {displayItems.map((item) => (
+                        <InventoryItem key={item.id} item={item} onDelete={handleDeleteItem} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+                      No items found for this search.
+                    </div>
+                  )}
+                </section>
+              </>
+            )}
           </div>
         )}
       </main>
 
-      <CreateBoxDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onCreateBox={handleCreateBox} />
-      {showCamera && <CameraCapture onCapture={handlePhotoCapture} onCancel={() => setShowCamera(false)} />}
+      <CreateBoxDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onCreateBox={handleCreateBox}
+        isSubmitting={createBoxMutation.isPending}
+      />
+
+      <Dialog open={showBoxPicker} onOpenChange={handleBoxPickerOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select a box</DialogTitle>
+            <DialogDescription>Choose where you want to store the new item.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+            {boxes.map((box) => (
+              <Button
+                key={box.id}
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => handleBoxSelection(box.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`h-8 w-8 rounded-md ${box.color}`} aria-hidden />
+                  <div className="text-left">
+                    <div className="font-medium leading-tight">{box.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {box.itemCount} {box.itemCount === 1 ? "item" : "items"}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            ))}
+            {!boxes.length && (
+              <div className="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">
+                Create a box to store your items.
+              </div>
+            )}
+          </div>
+          <Button variant="ghost" className="w-full gap-2" onClick={handleCreateBoxFromPicker}>
+            <Plus className="h-4 w-4" />
+            Create new box
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {showCamera && selectedBoxId ? (
+        <CameraCapture onCapture={handlePhotoCapture} onCancel={handleCancelCamera} boxId={selectedBoxId} />
+      ) : null}
     </div>
   )
 }

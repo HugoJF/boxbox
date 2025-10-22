@@ -12,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea"
 interface CreateBoxDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreateBox: (name: string, description: string, color: string) => void
+  onCreateBox: (name: string, description: string, color: string) => Promise<void> | void
+  isSubmitting?: boolean
 }
 
 const COLORS = [
@@ -24,18 +25,22 @@ const COLORS = [
   { name: "Yellow", value: "bg-yellow-100 text-yellow-700" },
 ]
 
-export function CreateBoxDialog({ open, onOpenChange, onCreateBox }: CreateBoxDialogProps) {
+export function CreateBoxDialog({ open, onOpenChange, onCreateBox, isSubmitting = false }: CreateBoxDialogProps) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [selectedColor, setSelectedColor] = useState(COLORS[0].value)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (name.trim()) {
-      onCreateBox(name.trim(), description.trim(), selectedColor)
-      setName("")
-      setDescription("")
-      setSelectedColor(COLORS[0].value)
+      try {
+        await onCreateBox(name.trim(), description.trim(), selectedColor)
+        setName("")
+        setDescription("")
+        setSelectedColor(COLORS[0].value)
+      } catch (error) {
+        console.error("[v0] Failed to create box:", error)
+      }
     }
   }
 
@@ -54,6 +59,7 @@ export function CreateBoxDialog({ open, onOpenChange, onCreateBox }: CreateBoxDi
               placeholder="e.g., Kitchen Supplies"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              disabled={isSubmitting}
               required
             />
           </div>
@@ -64,6 +70,7 @@ export function CreateBoxDialog({ open, onOpenChange, onCreateBox }: CreateBoxDi
               placeholder="What's stored in this box?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              disabled={isSubmitting}
               rows={3}
             />
           </div>
@@ -79,15 +86,18 @@ export function CreateBoxDialog({ open, onOpenChange, onCreateBox }: CreateBoxDi
                     selectedColor === color.value ? "ring-2 ring-offset-2 ring-primary" : ""
                   }`}
                   aria-label={color.name}
+                  disabled={isSubmitting}
                 />
               ))}
             </div>
           </div>
           <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit">Create Box</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Box"}
+            </Button>
           </div>
         </form>
       </DialogContent>

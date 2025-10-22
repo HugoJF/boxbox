@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { MoreVertical } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,15 +13,26 @@ interface InventoryItemProps {
   onDelete: (id: string) => void
 }
 
+const ITEM_PLACEHOLDER_IMAGE = "/item-placeholder.svg"
+
 export function InventoryItem({ item, onDelete }: InventoryItemProps) {
   const router = useRouter()
+  const [imageErrored, setImageErrored] = useState(false)
+
+  const hasValidImage = typeof item.image === "string" && item.image.trim().length > 0 && !imageErrored
+  const imageSrc = hasValidImage ? item.image : ITEM_PLACEHOLDER_IMAGE
 
   return (
     <Card className="overflow-hidden active:scale-[0.98] transition-transform">
       <div className="flex gap-4 p-4">
         <button onClick={() => router.push(`/item/${item.id}`)} className="flex gap-4 flex-1 min-w-0 text-left">
           <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-            <img src={item.image || "/placeholder.svg"} alt={item.name} className="h-full w-full object-cover" />
+            <img
+              src={imageSrc}
+              alt={item.name}
+              className="h-full w-full object-cover"
+              onError={() => setImageErrored(true)}
+            />
           </div>
 
           <div className="flex flex-1 flex-col justify-center min-w-0">

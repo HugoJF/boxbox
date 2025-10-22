@@ -1,15 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Camera, Plus, Search, MoreVertical } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+
 import { CameraCapture } from "@/components/camera-capture"
-import { InventoryItem } from "@/components/inventory-item"
 import { EmptyState } from "@/components/empty-state"
+import { InventoryItem } from "@/components/inventory-item"
 import { EditBoxDialog } from "@/components/edit-box-dialog"
-import type { Box, Item } from "@/lib/db/schema"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,108 +19,172 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import type { Box, Item } from "@/lib/db/schema"
+import { boxQueryOptions } from "@/lib/api"
 import { toast } from "sonner"
+
+type BoxWithItems = Box & { items: Item[] }
 
 export default function BoxDetailPage() {
   const params = useParams()
   const router = useRouter()
   const boxId = params.id as string
 
-  const [box, setBox] = useState<Box | null>(null)
-  const [items, setItems] = useState<Item[]>([])
+  const queryClient = useQueryClient()
+
   const [showCamera, setShowCamera] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
-  useEffect(() => {
-    fetchBoxData()
-  }, [boxId])
+  const baseBoxQuery = boxQueryOptions(boxId)
 
-  const fetchBoxData = async () => {
-    try {
-      const boxRes = await fetch(`/api/boxes/${boxId}`)
-      if (!boxRes.ok) {
-        router.push("/")
-        return
+  const { data: boxData, isPending, isError } = useQuery({
+    ...baseBoxQuery,
+    queryFn: async () => {
+      try {
+        const result = await baseBoxQuery.queryFn?.()
+        if (!result) return undefined
+        const base = result as Box & { items?: Item[] }
+        const items = Array.isArray(base.items) ? base.items : []
+        return { ...base, items } as BoxWithItems
+      } catch (error) {
+        if ((error as Error).message.includes("404")) {
+          router.push("/")
+        }
+        throw error
       }
-      const boxData = await boxRes.json()
-      setBox(boxData)
+    },
+  })
 
-      const itemsRes = await fetch(`/api/items?boxId=${boxId}`)
-      const itemsData = await itemsRes.json()
-      setItems(itemsData)
-    } catch (error) {
-      console.error("[v0] Error fetching box data:", error)
+  useEffect(() => {
+    if (isError) {
       toast.error("Failed to load box")
     }
-  }
+  }, [isError])
 
-  const handlePhotoCapture = async () => {
-    setShowCamera(false)
-    await fetchBoxData()
-  }
+  const items = boxData?.items ?? []
 
-  const handleDeleteItem = async (id: string) => {
-    try {
+  const deleteItemMutation = useMutation({
+    mutationFn: async (id: string) => {
       const res = await fetch(`/api/items/${id}`, { method: "DELETE" })
-      if (!res.ok) throw new Error("Failed to delete item")
-
-      setItems(items.filter((item) => item.id !== id))
+      if (!res.ok) {
+        throw new Error("Failed to delete item")
+      }
+      return id
+    },
+    onSuccess: (id) => {
+      queryClient.setQueryData<BoxWithItems | undefined>(["box", boxId], (previous) => {
+        if (!previous) return previous
+        return {
+          ...previous,
+          items: previous.items.filter((item) => item.id !== id),
+          itemCount: Math.max(0, previous.itemCount - 1),
+        }
+      })
+      void queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })
       toast.success("Item deleted")
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("[v0] Error deleting item:", error)
       toast.error("Failed to delete item")
-    }
-  }
+    },
+  })
 
-  const handleEditBox = async (name: string, description: string, color: string) => {
-    try {
+  const editBoxMutation = useMutation({
+    mutationFn: async ({ name, description, color }: { name: string; description: string; color: string }) => {
       const res = await fetch(`/api/boxes/${boxId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, description, color }),
       })
-      if (!res.ok) throw new Error("Failed to update box")
-
-      const updatedBox = await res.json()
-      setBox(updatedBox)
+      if (!res.ok) {
+        throw new Error("Failed to update box")
+      }
+      return (await res.json()) as Box
+    },
+    onSuccess: (updatedBox) => {
+      queryClient.setQueryData<BoxWithItems | undefined>(["box", boxId], (previous) => {
+        if (!previous) {
+          return { ...updatedBox, items: [] }
+        }
+        return { ...previous, ...updatedBox }
+      })
+      void queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })
       setShowEditDialog(false)
       toast.success("Box updated")
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("[v0] Error updating box:", error)
       toast.error("Failed to update box")
-    }
+    },
+  })
+
+  const handlePhotoCapture = async (_imageData?: string) => {
+    setShowCamera(false)
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["box", boxId], exact: false }),
+      queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false }),
+    ])
   }
 
-  const handleDeleteBox = async () => {
-    try {
-      const res = await fetch(`/api/boxes/${boxId}`, { method: "DELETE" })
-      if (!res.ok) throw new Error("Failed to delete box")
+  const handleDeleteItem = (id: string) => {
+    deleteItemMutation.mutate(id)
+  }
 
+  const handleEditBox = (name: string, description: string, color: string) => {
+    editBoxMutation.mutate({ name, description, color })
+  }
+
+  const deleteBoxMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/boxes/${boxId}`, { method: "DELETE" })
+      if (!res.ok) {
+        throw new Error("Failed to delete box")
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })
       toast.success("Box deleted")
       router.push("/")
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("[v0] Error deleting box:", error)
       toast.error("Failed to delete box")
-    }
+    },
+  })
+
+  const handleDeleteBox = () => {
+    deleteBoxMutation.mutate()
   }
 
   const handleShowQR = () => {
     router.push(`/qr/${boxId}`)
   }
 
-  if (!box) {
-    return null
+  const filteredItems = useMemo(
+    () =>
+      items.filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [items, searchQuery],
+  )
+
+  if (isPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading box…</div>
+    )
   }
 
-  const filteredItems = items.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  if (!boxData) {
+    return null
+  }
 
   if (showCamera) {
     return <CameraCapture onCapture={handlePhotoCapture} onCancel={() => setShowCamera(false)} boxId={boxId} />
@@ -135,11 +198,11 @@ export default function BoxDetailPage() {
             <Button size="icon" variant="ghost" onClick={() => router.push("/")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className={`p-2 rounded-lg ${box.color}`}>
+            <div className={`p-2 rounded-lg ${boxData.color}`}>
               <div className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold">{box.name}</h1>
+              <h1 className="text-lg font-semibold">{boxData.name}</h1>
               <p className="text-xs text-muted-foreground">{items.length} items</p>
             </div>
           </div>
@@ -203,20 +266,30 @@ export default function BoxDetailPage() {
         )}
       </main>
 
-      <EditBoxDialog open={showEditDialog} onOpenChange={setShowEditDialog} box={box} onEditBox={handleEditBox} />
+      <EditBoxDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        box={boxData}
+        onEditBox={handleEditBox}
+        isSubmitting={editBoxMutation.isPending}
+      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Box?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{box.name}" and all {items.length} items inside. This action cannot be
+              This will permanently delete "{boxData.name}" and all {items.length} items inside. This action cannot be
               undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteBox} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={handleDeleteBox}
+              className="bg-destructive text-destructive-foreground"
+              disabled={deleteBoxMutation.isPending}
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

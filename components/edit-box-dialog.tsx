@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import type { Box } from "@/lib/types"
+import type { Box } from "@/lib/db/schema"
 
 interface EditBoxDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   box: Box
   onEditBox: (name: string, description: string, color: string) => void
+  isSubmitting?: boolean
 }
 
 const COLORS = [
@@ -26,7 +27,7 @@ const COLORS = [
   { name: "Yellow", value: "bg-yellow-100 text-yellow-700" },
 ]
 
-export function EditBoxDialog({ open, onOpenChange, box, onEditBox }: EditBoxDialogProps) {
+export function EditBoxDialog({ open, onOpenChange, box, onEditBox, isSubmitting = false }: EditBoxDialogProps) {
   const [name, setName] = useState(box.name)
   const [description, setDescription] = useState(box.description)
   const [selectedColor, setSelectedColor] = useState(box.color)
@@ -59,6 +60,7 @@ export function EditBoxDialog({ open, onOpenChange, box, onEditBox }: EditBoxDia
               placeholder="e.g., Kitchen Supplies"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              disabled={isSubmitting}
               required
             />
           </div>
@@ -69,6 +71,7 @@ export function EditBoxDialog({ open, onOpenChange, box, onEditBox }: EditBoxDia
               placeholder="What's stored in this box?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              disabled={isSubmitting}
               rows={3}
             />
           </div>
@@ -84,15 +87,18 @@ export function EditBoxDialog({ open, onOpenChange, box, onEditBox }: EditBoxDia
                     selectedColor === color.value ? "ring-2 ring-offset-2 ring-primary" : ""
                   }`}
                   aria-label={color.name}
+                  disabled={isSubmitting}
                 />
               ))}
             </div>
           </div>
           <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
         </form>
       </DialogContent>
