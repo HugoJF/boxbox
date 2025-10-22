@@ -30,8 +30,8 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
   const streamRef = useRef<MediaStream | null>(null)
   const activeDeviceIdRef = useRef<string | null>(null)
 
-  const analyzeItemMutation = useMutation({
-    mutationFn: (image: string) => analyzeItem(image),
+  const analyzeFastMutation = useMutation({
+    mutationFn: (image: string) => analyzeItem(image, "fast"),
     retry: false,
   })
 
@@ -171,7 +171,6 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
       ctx.drawImage(video, 0, 0)
       const imageData = canvas.toDataURL("image/jpeg", 0.8)
       setCapturedImage(imageData)
-
       stopActiveStream()
     }
   }
@@ -196,26 +195,27 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
   }
 
   const confirm = async () => {
-    if (!capturedImage || !boxId) return
+    if (!capturedImage || !boxId || isProcessing) return
 
     setIsProcessing(true)
     try {
-      const analysis = await analyzeItemMutation.mutateAsync(capturedImage)
+      const analysis = await analyzeFastMutation.mutateAsync(capturedImage)
 
       await createItemMutation.mutateAsync({
         boxId,
         name: analysis?.name || "Unknown Item",
         category: analysis?.category || "Uncategorized",
         description: analysis?.description || "",
-        quantity: analysis?.quantity || 1,
+        quantity: analysis?.quantity ?? 1,
         image: capturedImage,
       })
+
+      onCapture(capturedImage)
       toast.success("Item added successfully")
       router.push(`/box/${boxId}`)
     } catch (error) {
-      console.error("[v0] Error processing item:", error)
+      console.error("[v0] Error processing item with fast analysis:", error)
 
-      // Create item without AI data and redirect to edit page
       try {
         const newItem = await createItemMutation.mutateAsync({
           boxId,
@@ -225,10 +225,11 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
           quantity: 1,
           image: capturedImage,
         })
-        toast.error("AI analysis failed. Please edit item details manually.")
+        toast.error("Fast AI analysis failed. Please edit item details manually.")
+        onCapture(capturedImage)
         router.push(`/item/${newItem.id}`)
       } catch (createError) {
-        console.error("[v0] Error creating item:", createError)
+        console.error("[v0] Error creating item after analysis failure:", createError)
         toast.error("Failed to add item")
         onCancel()
       }
@@ -310,7 +311,7 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
                 <Button
                   size="icon"
                   onClick={confirm}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !boxId}
                   className="h-20 w-20 rounded-full bg-primary hover:bg-primary/90"
                 >
                   {isProcessing ? <Spinner className="h-8 w-8" /> : <Check className="h-8 w-8" />}

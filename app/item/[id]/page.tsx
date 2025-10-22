@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Save, Trash2 } from "lucide-react"
+import { ArrowLeft, Save, Trash2, RefreshCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,8 +25,12 @@ import {
   deleteItem as deleteItemApi,
   itemQueryOptions,
   updateItem as updateItemApi,
+  analyzeItem,
+  type AnalyzeItemProfile,
+  type AnalyzeItemResponse,
 } from "@/lib/api"
 import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
 
 const ITEM_PLACEHOLDER_IMAGE = "/item-placeholder.svg"
 
@@ -44,6 +48,7 @@ export default function EditItemPage() {
   const [selectedBoxId, setSelectedBoxId] = useState("")
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [imageErrored, setImageErrored] = useState(false)
+  const [suggestionsEnabled, setSuggestionsEnabled] = useState(false)
 
   const itemQuery = itemQueryOptions(itemId)
   const {
@@ -59,6 +64,43 @@ export default function EditItemPage() {
     isError: boxesError,
     error: boxesErrorObj,
   } = useQuery(boxesQueryOptions)
+
+  const SUGGESTION_PROFILES: AnalyzeItemProfile[] = ["fast", "balanced", "high"]
+  const imageForAnalysis = item?.image?.trim() ? item.image : null
+  const suggestionsActive = suggestionsEnabled && Boolean(imageForAnalysis)
+
+  const fastSuggestionQuery = useQuery<AnalyzeItemResponse>({
+    queryKey: ["item-suggestion", itemId, "fast", imageForAnalysis],
+    queryFn: () => analyzeItem(imageForAnalysis!, "fast"),
+    enabled: suggestionsActive,
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+
+  const balancedSuggestionQuery = useQuery<AnalyzeItemResponse>({
+    queryKey: ["item-suggestion", itemId, "balanced", imageForAnalysis],
+    queryFn: () => analyzeItem(imageForAnalysis!, "balanced"),
+    enabled: suggestionsActive,
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+
+  const highSuggestionQuery = useQuery<AnalyzeItemResponse>({
+    queryKey: ["item-suggestion", itemId, "high", imageForAnalysis],
+    queryFn: () => analyzeItem(imageForAnalysis!, "high"),
+    enabled: suggestionsActive,
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
+
+  const suggestionQueries: Record<AnalyzeItemProfile, UseQueryResult<AnalyzeItemResponse, unknown>> = {
+    fast: fastSuggestionQuery,
+    balanced: balancedSuggestionQuery,
+    high: highSuggestionQuery,
+  }
+
+  const isAnySuggestionFetching =
+    fastSuggestionQuery.isFetching || balancedSuggestionQuery.isFetching || highSuggestionQuery.isFetching
 
   useEffect(() => {
     if (item) {
@@ -144,6 +186,54 @@ export default function EditItemPage() {
 
   const handleDelete = () => {
     deleteItemMutation.mutate()
+  }
+
+  const formatProfileLabel = (profile: AnalyzeItemProfile) => profile.charAt(0).toUpperCase() + profile.slice(1)
+
+  const handleEnableSuggestions = () => {
+    if (!imageForAnalysis) {
+      toast.error("No image available for AI suggestions.")
+      return
+    }
+    setSuggestionsEnabled(true)
+  }
+
+  const handleRefreshSuggestions = async () => {
+    if (!imageForAnalysis) {
+      toast.error("No image available for AI suggestions.")
+      return
+    }
+
+    try {
+      await Promise.all(
+        SUGGESTION_PROFILES.map(async (profile) => {
+          const query = suggestionQueries[profile]
+          if (query) {
+            await query.refetch({ throwOnError: false })
+          }
+        }),
+      )
+      toast.success("Suggestions refreshed")
+    } catch (err) {
+      console.error("[v0] Error refreshing suggestions:", err)
+      toast.error("Failed to refresh suggestions")
+    }
+  }
+
+  const applySuggestion = (suggestion: AnalyzeItemResponse, profile: AnalyzeItemProfile) => {
+    if (suggestion.name) {
+      setName(suggestion.name)
+    }
+    if (suggestion.category) {
+      setCategory(suggestion.category)
+    }
+    if (typeof suggestion.quantity === "number" && Number.isFinite(suggestion.quantity) && suggestion.quantity > 0) {
+      setQuantity(Math.max(1, Math.round(suggestion.quantity)))
+    }
+    if (typeof suggestion.description === "string") {
+      setDescription(suggestion.description)
+    }
+    toast.success(`${formatProfileLabel(profile)} suggestion applied`)
   }
 
   if (itemPending || !item) {
@@ -246,6 +336,127 @@ export default function EditItemPage() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-border p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">AI Suggestions</h2>
+                <p className="text-xs text-muted-foreground">
+                  Compare alternative model passes and apply the values you prefer.
+                </p>
+              </div>
+              {suggestionsEnabled ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleRefreshSuggestions}
+                  disabled={isAnySuggestionFetching}
+                >
+                  {isAnySuggestionFetching ? (
+                    <Spinner className="h-4 w-4" />
+                  ) : (
+                    <>
+                      <RefreshCcw className="h-4 w-4" />
+                      Refresh
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEnableSuggestions}
+                  disabled={!imageForAnalysis}
+                >
+                  Load suggestions
+                </Button>
+              )}
+            </div>
+
+            {suggestionsEnabled ? (
+              imageForAnalysis ? (
+                <div className="grid gap-3">
+                  {SUGGESTION_PROFILES.map((profile) => {
+                    const query = suggestionQueries[profile]
+                    const isLoading = query.status === "pending"
+                    const isError = query.status === "error"
+                    const isSuccess = query.status === "success"
+                    const isFetching = query.isFetching && query.status !== "pending"
+                    const data = query.data
+                    const errorMessage =
+                      query.error instanceof Error ? query.error.message : isError ? "Suggestion failed." : null
+
+                    return (
+                      <div key={profile} className="rounded-md border border-border bg-muted/30 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold">{formatProfileLabel(profile)} profile</p>
+                            <p className="text-xs text-muted-foreground">
+                              {profile === "fast"
+                                ? "Quick pass focused on speed."
+                                : profile === "high"
+                                  ? "Detailed reasoning for higher accuracy."
+                                  : "Balanced trade-off between speed and detail."}
+                            </p>
+                          </div>
+                          {(isLoading || isFetching) && <Spinner className="h-4 w-4" />}
+                        </div>
+
+                        <div className="mt-3 space-y-1 text-sm">
+                          {isSuccess && data ? (
+                            <>
+                              <p className="font-medium">{data.name ?? "Unknown"}</p>
+                              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                                Category: {data.category ?? "Uncategorized"} · Qty: {data.quantity ?? 1}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {(data.description && data.description.trim().length > 0
+                                  ? data.description.trim()
+                                  : "No description provided.") || "No description provided."}
+                              </p>
+                            </>
+                          ) : isError ? (
+                            <p className="text-sm text-destructive">{errorMessage ?? "Suggestion failed."}</p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Generating suggestion…</p>
+                          )}
+                        </div>
+
+                        <div className="mt-3 flex justify-end gap-2">
+                          {isError && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => query.refetch()}
+                              disabled={query.isFetching}
+                            >
+                              Retry
+                            </Button>
+                          )}
+                          {data && (
+                            <Button
+                              size="sm"
+                              onClick={() => applySuggestion(data, profile)}
+                              disabled={updateItemMutation.isPending}
+                            >
+                              Apply suggestion
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Item image required to generate suggestions.</p>
+              )
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Load AI suggestions to compare results from fast, balanced, and high profiles.
+              </p>
+            )}
           </div>
 
           <Button
