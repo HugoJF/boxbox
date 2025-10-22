@@ -10,7 +10,8 @@
     "db:studio": "drizzle-kit studio",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "tunnel": "cloudflared tunnel --url localhost:3001"
   },
   "dependencies": {
     "@aws-sdk/client-rds-data": "latest",
