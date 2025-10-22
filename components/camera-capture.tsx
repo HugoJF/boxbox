@@ -25,20 +25,40 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
   const [showDeviceSelector, setShowDeviceSelector] = useState(false)
+  const streamRef = useRef<MediaStream | null>(null)
+  const activeDeviceIdRef = useRef<string | null>(null)
+
+  const stopActiveStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+    setStream(null)
+  }
 
   useEffect(() => {
     const savedDeviceId = typeof window !== "undefined" ? localStorage.getItem("preferred-camera-device") : null
     if (savedDeviceId) {
       setSelectedDeviceId(savedDeviceId)
     }
-    void enumerateDevices()
+
+    void (async () => {
+      const started = await startCamera(savedDeviceId)
+      if (started) {
+        await enumerateDevices()
+      }
+    })()
+
+    return () => {
+      stopActiveStream()
+    }
   }, [])
 
   const enumerateDevices = async () => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) {
       console.error("[v0] Media devices API unavailable")
       setError("Camera is not available in this environment.")
-      return
+      return []
     }
 
     try {
@@ -46,52 +66,63 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
       const videoDevices = allDevices.filter((device) => device.kind === "videoinput")
       setDevices(videoDevices)
 
-      if (!selectedDeviceId && videoDevices.length > 1) {
-        setShowDeviceSelector(true)
-      } else if (!selectedDeviceId && videoDevices.length === 1) {
+      if (!selectedDeviceId && videoDevices.length === 1) {
         setSelectedDeviceId(videoDevices[0].deviceId)
       } else if (!videoDevices.length) {
         setError("No camera devices detected.")
       }
+      return videoDevices
     } catch (err) {
       console.error("[v0] Error enumerating devices:", err)
       setError("Unable to access camera devices.")
+      return []
     }
   }
 
-  useEffect(() => {
-    if (selectedDeviceId && !showDeviceSelector) {
-      startCamera(selectedDeviceId)
-    }
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop())
-      }
-    }
-  }, [selectedDeviceId, showDeviceSelector])
-
-  const startCamera = async (deviceId: string) => {
+  const startCamera = async (deviceId?: string | null): Promise<boolean> => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setError("Camera is not available in this environment.")
-      return
+      return false
     }
 
     try {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop())
-      }
+      stopActiveStream()
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: { exact: deviceId }, width: 1920, height: 1080 },
+      const constraints: MediaStreamConstraints = {
+        video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: "environment" } },
         audio: false,
-      })
+      }
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
       setStream(mediaStream)
+      streamRef.current = mediaStream
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream
       }
+      setError(null)
+
+      const [videoTrack] = mediaStream.getVideoTracks()
+      const resolvedDeviceId = videoTrack?.getSettings().deviceId ?? deviceId ?? null
+      activeDeviceIdRef.current = resolvedDeviceId
+      if (resolvedDeviceId && resolvedDeviceId !== selectedDeviceId) {
+        setSelectedDeviceId(resolvedDeviceId)
+        if (typeof window !== "undefined") {
+          localStorage.setItem("preferred-camera-device", resolvedDeviceId)
+        }
+      }
+
+      if (!devices.length) {
+        void enumerateDevices()
+      }
+
+      return true
     } catch (err) {
       console.error("[v0] Camera access error:", err)
+      if (deviceId) {
+        console.warn("[v0] Falling back to default camera")
+        return startCamera(null)
+      }
       setError("Unable to access camera. Please check permissions.")
+      return false
     }
   }
 
@@ -101,12 +132,17 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
       localStorage.setItem("preferred-camera-device", deviceId)
     }
     setShowDeviceSelector(false)
+
+    void (async () => {
+      const started = await startCamera(deviceId)
+      if (started) {
+        await enumerateDevices()
+      }
+    })()
   }
 
   const handleSwitchCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop())
-    }
+    stopActiveStream()
     setShowDeviceSelector(true)
   }
 
@@ -124,16 +160,26 @@ export function CameraCapture({ onCapture, onCancel, boxId }: CameraCaptureProps
       const imageData = canvas.toDataURL("image/jpeg", 0.8)
       setCapturedImage(imageData)
 
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop())
-      }
+      stopActiveStream()
     }
   }
 
   const retake = () => {
     setCapturedImage(null)
     if (selectedDeviceId) {
-      startCamera(selectedDeviceId)
+      void (async () => {
+        const restarted = await startCamera(selectedDeviceId)
+        if (restarted) {
+          await enumerateDevices()
+        }
+      })()
+    } else {
+      void (async () => {
+        const restarted = await startCamera(null)
+        if (restarted) {
+          await enumerateDevices()
+        }
+      })()
     }
   }
 
