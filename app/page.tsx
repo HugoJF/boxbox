@@ -141,17 +141,17 @@ export default function InventoryPage() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between px-4">
+        <div className="container flex h-auto flex-wrap items-center justify-between gap-2 px-4 py-3 sm:flex-nowrap">
           <div className="flex items-center gap-2">
             <BoxIcon className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-semibold">Inventory</h1>
           </div>
-          <div className="flex gap-4">
-            <Button size="lg" onClick={handleAddItemClick} className="gap-2" disabled={boxesPending}>
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <Button size="default" onClick={handleAddItemClick} className="gap-2" disabled={boxesPending}>
               <Camera className="h-5 w-5" />
               Add Item
             </Button>
-            <Button size="lg" onClick={() => setShowCreateDialog(true)} className="gap-2">
+            <Button size="sm" onClick={() => setShowCreateDialog(true)} className="gap-2" variant="outline">
               <Plus className="h-5 w-5" />
               New Box
             </Button>
