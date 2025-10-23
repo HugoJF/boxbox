@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { BoxIcon, Camera, ChevronRight, Plus, Search } from "lucide-react"
@@ -143,7 +144,7 @@ export default function InventoryPage() {
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-auto flex-wrap items-center justify-between gap-2 px-4 py-3 sm:flex-nowrap">
           <div className="flex items-center gap-2">
-            <BoxIcon className="h-6 w-6 text-primary" />
+            <Image src="/icons/pwa-icon.svg" alt="boxbox." width={28} height={28} className="rounded-lg" />
             <h1 className="text-xl font-semibold">boxbox.</h1>
           </div>
           <div className="flex items-center gap-2 whitespace-nowrap">

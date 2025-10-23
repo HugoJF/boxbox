@@ -1,26 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="outerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1d4ed8" />
-      <stop offset="100%" stop-color="#38bdf8" />
-    </linearGradient>
-    <linearGradient id="innerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f8fafc" stop-opacity="0.95" />
-      <stop offset="100%" stop-color="#dbeafe" stop-opacity="0.9" />
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#0ea5e9" />
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="96" ry="96" fill="url(#outerGrad)" />
-  <g transform="translate(96 96)">
-    <rect x="0" y="0" width="320" height="320" rx="48" fill="rgba(15,23,42,0.2)" />
-    <rect x="28" y="28" width="264" height="264" rx="36" fill="rgba(15,23,42,0.35)" />
-    <path d="M64 96a16 16 0 0 1 16-16h160a16 16 0 0 1 16 16v112a16 16 0 0 1-16 16H80a16 16 0 0 1-16-16V96z" fill="#0f172a" opacity="0.35" />
-    <path d="M52 128c0-17.673 14.327-32 32-32h160c17.673 0 32 14.327 32 32v128c0 17.673-14.327 32-32 32H84c-17.673 0-32-14.327-32-32z" fill="url(#innerGrad)" />
-    <path d="M116 166h144v84H116z" fill="#1d4ed8" opacity="0.85" />
-    <path d="M132 198h112v40H132z" fill="#0f172a" opacity="0.25" />
-    <path d="M84 128l76-44a16 16 0 0 1 16 0l76 44" fill="none" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" />
-    <path d="M124 136h128v20H124z" fill="#1d4ed8" opacity="0.65" />
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#grad)" />
+  <g fill="#f8fafc">
+    <path d="M144 176c0-17.673 14.327-32 32-32h160c17.673 0 32 14.327 32 32v160c0 17.673-14.327 32-32 32H176c-17.673 0-32-14.327-32-32V176zm64 32v96h96v-96h-96z" opacity=".9" />
+    <path d="M188 176h52v64h-76v-40c0-13.255 10.745-24 24-24z" opacity=".75" />
+    <path d="M324 336h-52v-64h76v40c0 13.255-10.745 24-24 24z" opacity=".75" />
   </g>
-  <circle cx="128" cy="400" r="28" fill="#0f172a" opacity="0.25" />
-  <path d="M116 392h24v16h-24z" fill="#38bdf8" opacity="0.85" />
-  <path d="M342 84l28-20 28 20v28l-28 20-28-20z" fill="#38bdf8" opacity="0.85" />
 </svg>
