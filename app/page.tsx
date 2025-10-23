@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { BoxIcon, Camera, ChevronRight, List, Plus, Search } from "lucide-react"
+import { BoxIcon, Camera, ChevronRight, Plus, Search } from "lucide-react"
 
 import { BoxCard } from "@/components/box-card"
 import { CameraCapture } from "@/components/camera-capture"
@@ -151,10 +151,6 @@ export default function InventoryPage() {
               <Camera className="h-5 w-5" />
               Add Item
             </Button>
-            <Button size="sm" onClick={() => setShowCreateDialog(true)} className="gap-2" variant="outline">
-              <Plus className="h-5 w-5" />
-              New Box
-            </Button>
           </div>
         </div>
       </header>
@@ -255,37 +251,52 @@ export default function InventoryPage() {
       />
 
       <Dialog open={showBoxPicker} onOpenChange={handleBoxPickerOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Select a box</DialogTitle>
             <DialogDescription>Choose where you want to store the new item.</DialogDescription>
           </DialogHeader>
-          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-            {boxes.map((box) => (
-              <Button
-                key={box.id}
-                variant="outline"
-                className="w-full justify-between"
-                onClick={() => handleBoxSelection(box.id)}
-              >
-                <div className="flex items-center gap-3">
-                  <span className={`h-8 w-8 rounded-md ${box.color}`} aria-hidden />
-                  <div className="text-left">
-                    <div className="font-medium leading-tight">{box.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {box.itemCount} {box.itemCount === 1 ? "item" : "items"}
+
+          {boxes.length > 0 ? (
+            <div className="space-y-2">
+              {boxes.map((box) => (
+                <div
+                  key={box.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleBoxSelection(box.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault()
+                      handleBoxSelection(box.id)
+                    }
+                  }}
+                  className="flex cursor-pointer items-center justify-between rounded-xl border border-border bg-muted/30 p-5 transition hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg ${box.color}`}
+                      aria-hidden
+                    >
+                      <BoxIcon className="h-5 w-5 text-background" />
+                    </div>
+                    <div className="min-w-0 space-y-1">
+                      <div className="truncate text-base font-semibold">{box.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {box.itemCount} {box.itemCount === 1 ? "item" : "items"}
+                      </div>
                     </div>
                   </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            ))}
-            {!boxes.length && (
-              <div className="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">
-                Create a box to store your items.
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4 rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+              You don&apos;t have any boxes yet. Create one to get started.
+            </div>
+          )}
+
           <Button variant="ghost" className="w-full gap-2" onClick={handleCreateBoxFromPicker}>
             <Plus className="h-4 w-4" />
             Create new box
