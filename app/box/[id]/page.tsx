@@ -212,7 +212,7 @@ export default function BoxDetailPage() {
       </header>
 
       <main className="container px-4 py-6">
-        <div className="mb-6 flex gap-2">
+        <div className="mb-6 flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -223,9 +223,9 @@ export default function BoxDetailPage() {
               className="pl-10 h-12 text-base"
             />
           </div>
-          <Button size="lg" onClick={() => setShowCamera(true)} className="gap-2">
+          <Button size="lg" onClick={() => setShowCamera(true)} className="h-12 gap-2">
             <Camera className="h-5 w-5" />
-            Add
+            Add item
           </Button>
         </div>
 
