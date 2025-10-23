@@ -175,9 +175,3 @@
 * {
   border-color: var(--color-border);
 }
-
-body {
-  font-family: var(--font-sans);
-  background: var(--color-background);
-  color: var(--color-foreground);
-}

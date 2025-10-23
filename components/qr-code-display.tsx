@@ -61,7 +61,7 @@ export function QRCodeDisplay({ box, qrUrl }: QRCodeDisplayProps) {
         {box.description && <p className="text-muted-foreground">{box.description}</p>}
       </div>
 
-      <div className="bg-white p-8 rounded-lg shadow-lg print:shadow-none">
+      <div className="p-8 rounded-lg shadow-lg print:shadow-none">
         <canvas ref={canvasRef} className="max-w-full h-auto" />
       </div>
 
@@ -71,7 +71,7 @@ export function QRCodeDisplay({ box, qrUrl }: QRCodeDisplayProps) {
       </div>
 
       <div className="flex gap-3 print:hidden">
-        <Button size="lg" onClick={handleDownload} variant="outline" className="gap-2 bg-transparent">
+        <Button size="lg" onClick={handleDownload} variant="outline" className="gap-2">
           <Download className="h-5 w-5" />
           Download
         </Button>
