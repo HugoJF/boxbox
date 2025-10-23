@@ -105,7 +105,7 @@ export default function AllItemsPage() {
         </div>
       </header>
 
-      <main className="container px-4 py-6">
+      <main className="mx-auto container px-4 py-6">
         {status === "pending" ? (
           <div className="flex h-40 items-center justify-center text-muted-foreground">
             <Spinner className="h-6 w-6" />

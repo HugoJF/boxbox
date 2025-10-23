@@ -144,7 +144,7 @@ export default function InventoryPage() {
         <div className="container flex h-auto flex-wrap items-center justify-between gap-2 px-4 py-3 sm:flex-nowrap">
           <div className="flex items-center gap-2">
             <BoxIcon className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold">Inventory</h1>
+            <h1 className="text-xl font-semibold">boxbox.</h1>
           </div>
           <div className="flex items-center gap-2 whitespace-nowrap">
             <Button size="default" onClick={handleAddItemClick} className="gap-2" disabled={boxesPending}>
@@ -155,7 +155,7 @@ export default function InventoryPage() {
         </div>
       </header>
 
-      <main className="container px-4 py-6">
+      <main className="mx-auto container px-4 py-6">
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
