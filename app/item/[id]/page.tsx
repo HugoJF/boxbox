@@ -228,6 +228,7 @@ export default function EditItemPage() {
       setDescription(suggestion.description)
     }
     toast.success(`${formatProfileLabel(profile)} suggestion applied`)
+    handleSave();
   }
 
   if (itemPending || !item) {
@@ -252,7 +253,7 @@ export default function EditItemPage() {
         </div>
       </header>
 
-      <main className="container px-4 py-6 max-w-2xl">
+      <main className="mx-auto container px-4 py-6 max-w-2xl">
         <div className="mb-6">
           <div className="relative h-48 w-full overflow-hidden rounded-lg bg-muted">
             <img
@@ -421,7 +422,7 @@ export default function EditItemPage() {
                             <Button
                               size="sm"
                               onClick={() => applySuggestion(data, profile)}
-                              disabled={updateItemMutation.isPending}
+                              disabled={query.isFetching || updateItemMutation.isPending}
                             >
                               Apply suggestion
                             </Button>
