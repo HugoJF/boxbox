@@ -95,6 +95,11 @@ export interface AnalyzeItemResponse {
 
 export type AnalyzeItemProfile = "fast" | "balanced" | "high"
 
+export interface PaginatedItemsResponse {
+  items: Item[]
+  nextCursor: string | null
+}
+
 export interface CreateItemPayload {
   boxId: string
   name: string
@@ -112,6 +117,14 @@ export interface UpdateItemPayload {
 
 export const analyzeItem = (image: string, profile: AnalyzeItemProfile = "balanced") =>
   apiPost<AnalyzeItemResponse>("/api/analyze-item", { image, profile })
+
+export const fetchPaginatedItems = (limit: number, cursor?: string) =>
+  apiGet<PaginatedItemsResponse>("/api/items", {
+    params: {
+      limit,
+      cursor,
+    },
+  })
 
 export const createItem = (payload: CreateItemPayload) =>
   apiPost<Item>("/api/items", payload)

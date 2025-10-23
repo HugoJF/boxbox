@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { BoxIcon, Camera, ChevronRight, Plus, Search } from "lucide-react"
+import { BoxIcon, Camera, ChevronRight, List, Plus, Search } from "lucide-react"
 
 import { BoxCard } from "@/components/box-card"
 import { CameraCapture } from "@/components/camera-capture"
@@ -200,13 +200,23 @@ export default function InventoryPage() {
                 <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Boxes</h2>
               )}
               {displayBoxes.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {displayBoxes.map((box) => (
-                    <Link key={box.id} href={`/box/${box.id}`}>
-                      <BoxCard box={box} />
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {displayBoxes.map((box) => (
+                      <Link key={box.id} href={`/box/${box.id}`}>
+                        <BoxCard box={box} />
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="flex justify-center pt-4">
+                    <Link
+                      href="/items"
+                      className="text-sm font-medium text-primary hover:text-primary/80"
+                    >
+                      View all items
                     </Link>
-                  ))}
-                </div>
+                  </div>
+                </>
               ) : (
                 <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
                   {hasSearch ? "No boxes found for this search." : "No boxes available."}

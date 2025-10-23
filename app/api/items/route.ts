@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import { db } from "@/lib/db"
 import { boxes, items } from "@/lib/db/schema"
-import { and, desc, eq, like, or, sql } from "drizzle-orm"
+import { and, desc, eq, like, lt, or, sql } from "drizzle-orm"
 
 const ITEM_PLACEHOLDER_IMAGE = "/item-placeholder.svg"
 
@@ -11,6 +11,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const boxId = searchParams.get("boxId")
     const search = searchParams.get("search")
+    const limitParam = searchParams.get("limit")
+    const cursorParam = searchParams.get("cursor")
 
     const conditions = []
 
@@ -23,6 +25,19 @@ export async function GET(request: Request) {
       conditions.push(or(like(items.name, pattern), like(items.description, pattern)))
     }
 
+    if (cursorParam) {
+      const [createdAtCursor, idCursor] = cursorParam.split("__")
+      if (!createdAtCursor || !idCursor) {
+        return NextResponse.json({ error: "Invalid cursor" }, { status: 400 })
+      }
+      conditions.push(
+        or(
+          lt(items.createdAt, createdAtCursor),
+          and(eq(items.createdAt, createdAtCursor), lt(items.id, idCursor)),
+        ),
+      )
+    }
+
     let itemQuery = db.select().from(items)
 
     if (conditions.length === 1) {
@@ -31,8 +46,40 @@ export async function GET(request: Request) {
       itemQuery = itemQuery.where(and(...conditions))
     }
 
-    const results = await itemQuery.orderBy(desc(items.createdAt))
-    return NextResponse.json(results)
+    const isPaginatedRequest = Boolean(limitParam || cursorParam)
+    const limit = isPaginatedRequest
+      ? (() => {
+          const parsed = Number.parseInt(limitParam ?? "", 10)
+          const fallback = 20
+          const candidate = Number.isNaN(parsed) ? fallback : parsed
+          return Math.min(Math.max(candidate, 1), 50)
+        })()
+      : undefined
+
+    if (limit) {
+      itemQuery = itemQuery.orderBy(desc(items.createdAt), desc(items.id)).limit(limit + 1)
+    } else {
+      itemQuery = itemQuery.orderBy(desc(items.createdAt))
+    }
+
+    const rows = await itemQuery
+
+    if (!limit) {
+      return NextResponse.json(rows)
+    }
+
+    let nextCursor: string | null = null
+    let itemsForResponse = rows
+    if (rows.length > limit) {
+      const nextItem = rows[limit]
+      itemsForResponse = rows.slice(0, limit)
+      nextCursor = `${nextItem.createdAt}__${nextItem.id}`
+    }
+
+    return NextResponse.json({
+      items: itemsForResponse,
+      nextCursor,
+    })
   } catch (error) {
     console.error("[v0] Error fetching items:", error)
     return NextResponse.json({ error: "Failed to fetch items" }, { status: 500 })
