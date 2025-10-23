@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const allBoxes = await boxQuery.orderBy(desc(boxes.createdAt))
     return NextResponse.json(allBoxes)
   } catch (error) {
-    console.error("[v0] Error fetching boxes:", error)
+    console.error("Error fetching boxes:", error)
     return NextResponse.json({ error: "Failed to fetch boxes" }, { status: 500 })
   }
 }
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(newBox[0])
   } catch (error) {
-    console.error("[v0] Error creating box:", error)
+    console.error("Error creating box:", error)
     return NextResponse.json({ error: "Failed to create box" }, { status: 500 })
   }
 }

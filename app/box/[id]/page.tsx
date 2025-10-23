@@ -91,7 +91,7 @@ export default function BoxDetailPage() {
       toast.success("Item deleted")
     },
     onError: (error) => {
-      console.error("[v0] Error deleting item:", error)
+      console.error("Error deleting item:", error)
       toast.error("Failed to delete item")
     },
   })
@@ -111,7 +111,7 @@ export default function BoxDetailPage() {
       toast.success("Box updated")
     },
     onError: (error) => {
-      console.error("[v0] Error updating box:", error)
+      console.error("Error updating box:", error)
       toast.error("Failed to update box")
     },
   })
@@ -140,7 +140,7 @@ export default function BoxDetailPage() {
       router.push("/")
     },
     onError: (error) => {
-      console.error("[v0] Error deleting box:", error)
+      console.error("Error deleting box:", error)
       toast.error("Failed to delete box")
     },
   })

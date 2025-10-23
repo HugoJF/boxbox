@@ -83,7 +83,7 @@ export default function AllItemsPage() {
       toast.success("Item deleted")
     },
     onError: (err) => {
-      console.error("[v0] Error deleting item:", err)
+      console.error("Error deleting item:", err)
       toast.error("Failed to delete item")
     },
   })

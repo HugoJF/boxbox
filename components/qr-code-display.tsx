@@ -29,7 +29,7 @@ export function QRCodeDisplay({ box, qrUrl }: QRCodeDisplayProps) {
           },
         })
       } catch (error) {
-        console.error("[v0] Error generating QR code:", error)
+        console.error("Error generating QR code:", error)
         toast.error("Failed to generate QR code")
       }
     }

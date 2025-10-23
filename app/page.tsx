@@ -60,7 +60,7 @@ export default function InventoryPage() {
       void queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })
     },
     onError: (error) => {
-      console.error("[v0] Error creating box:", error)
+      console.error("Error creating box:", error)
     },
   })
 
@@ -71,7 +71,7 @@ export default function InventoryPage() {
       void queryClient.invalidateQueries({ queryKey: ["boxes"], exact: false })
     },
     onError: (error) => {
-      console.error("[v0] Error deleting item:", error)
+      console.error("Error deleting item:", error)
     },
   })
 
@@ -88,7 +88,7 @@ export default function InventoryPage() {
       await createBoxMutation.mutateAsync({ name, description, color })
       setShowCreateDialog(false)
     } catch (error) {
-      console.error("[v0] Error creating box:", error)
+      console.error("Error creating box:", error)
     }
   }
 

@@ -14,7 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json(item[0])
   } catch (error) {
-    console.error("[v0] Error fetching item:", error)
+    console.error("Error fetching item:", error)
     return NextResponse.json({ error: "Failed to fetch item" }, { status: 500 })
   }
 }
@@ -58,7 +58,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json(updatedItem[0])
   } catch (error) {
-    console.error("[v0] Error updating item:", error)
+    console.error("Error updating item:", error)
     return NextResponse.json({ error: "Failed to update item" }, { status: 500 })
   }
 }
@@ -85,7 +85,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Error deleting item:", error)
+    console.error("Error deleting item:", error)
     return NextResponse.json({ error: "Failed to delete item" }, { status: 500 })
   }
 }

@@ -123,7 +123,7 @@ export default function EditItemPage() {
 
   useEffect(() => {
     if (boxesError) {
-      console.error("[v0] Error fetching boxes:", boxesErrorObj)
+      console.error("Error fetching boxes:", boxesErrorObj)
       toast.error("Failed to load boxes")
     }
   }, [boxesError, boxesErrorObj])
@@ -150,7 +150,7 @@ export default function EditItemPage() {
       router.push(`/box/${updatedItem.boxId}`)
     },
     onError: (error) => {
-      console.error("[v0] Error updating item:", error)
+      console.error("Error updating item:", error)
       toast.error("Failed to update item")
     },
   })
@@ -168,7 +168,7 @@ export default function EditItemPage() {
       router.push(`/box/${item?.boxId ?? selectedBoxId}`)
     },
     onError: (error) => {
-      console.error("[v0] Error deleting item:", error)
+      console.error("Error deleting item:", error)
       toast.error("Failed to delete item")
     },
   })
@@ -212,7 +212,7 @@ export default function EditItemPage() {
       )
       toast.success("Suggestions refreshed")
     } catch (err) {
-      console.error("[v0] Error refreshing suggestions:", err)
+      console.error("Error refreshing suggestions:", err)
       toast.error("Failed to refresh suggestions")
     }
   }

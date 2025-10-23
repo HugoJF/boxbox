@@ -39,7 +39,7 @@ export function CreateBoxDialog({ open, onOpenChange, onCreateBox, isSubmitting 
         setDescription("")
         setSelectedColor(COLORS[0].value)
       } catch (error) {
-        console.error("[v0] Failed to create box:", error)
+        console.error("Failed to create box:", error)
       }
     }
   }

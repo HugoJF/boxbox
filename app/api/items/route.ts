@@ -81,7 +81,7 @@ export async function GET(request: Request) {
       nextCursor,
     })
   } catch (error) {
-    console.error("[v0] Error fetching items:", error)
+    console.error("Error fetching items:", error)
     return NextResponse.json({ error: "Failed to fetch items" }, { status: 500 })
   }
 }
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(newItem[0])
   } catch (error) {
-    console.error("[v0] Error creating item:", error)
+    console.error("Error creating item:", error)
     return NextResponse.json({ error: "Failed to create item" }, { status: 500 })
   }
 }

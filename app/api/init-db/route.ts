@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 
 export async function POST() {
   try {
-    console.log("[v0] Initializing database tables...")
+    console.log("Initializing database tables...")
 
     // Create boxes table
     await db.run(sql`
@@ -45,14 +45,14 @@ export async function POST() {
       CREATE INDEX IF NOT EXISTS idx_items_created_at ON items(created_at)
     `)
 
-    console.log("[v0] Database tables initialized successfully")
+    console.log("Database tables initialized successfully")
 
     return NextResponse.json({
       success: true,
       message: "Database initialized successfully",
     })
   } catch (error) {
-    console.error("[v0] Error initializing database:", error)
+    console.error("Error initializing database:", error)
     return NextResponse.json({ error: "Failed to initialize database", details: String(error) }, { status: 500 })
   }
 }

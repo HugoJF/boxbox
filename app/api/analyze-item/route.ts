@@ -96,20 +96,20 @@ export async function POST(req: Request) {
       }
       parsed = JSON.parse(jsonPayload)
     } catch (parseError) {
-      console.error("[v0] Failed to parse analysis response:", parseError, text)
+      console.error("Failed to parse analysis response:", parseError, text)
       return Response.json({ error: "AI response was not valid JSON", raw: text }, { status: 502 })
     }
 
     const validation = itemSchema.safeParse(parsed)
 
     if (!validation.success) {
-      console.error("[v0] Analysis response failed schema validation:", validation.error)
+      console.error("Analysis response failed schema validation:", validation.error)
       return Response.json({ error: "AI response failed validation" }, { status: 502 })
     }
 
     return Response.json({ ...validation.data, profile: selectedProfile })
   } catch (error) {
-    console.error("[v0] Error analyzing item:", error)
+    console.error("Error analyzing item:", error)
     return Response.json({ error: "Failed to analyze item" }, { status: 500 })
   }
 }

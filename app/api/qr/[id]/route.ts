@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json({ qrCode: qrCodeDataUrl, url })
   } catch (error) {
-    console.error("[v0] Error generating QR code:", error)
+    console.error("Error generating QR code:", error)
     return NextResponse.json({ error: "Failed to generate QR code" }, { status: 500 })
   }
 }

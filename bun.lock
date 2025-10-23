@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "my-v0-project",
+      "name": "boxbox",
       "dependencies": {
         "@aws-sdk/client-rds-data": "latest",
         "@cloudflare/workers-types": "latest",

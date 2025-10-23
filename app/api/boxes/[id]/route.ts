@@ -21,7 +21,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 
     return NextResponse.json({ ...box[0], items: boxItems })
   } catch (error) {
-    console.error("[v0] Error fetching box:", error)
+    console.error("Error fetching box:", error)
     return NextResponse.json({ error: "Failed to fetch box" }, { status: 500 })
   }
 }
@@ -40,7 +40,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     return NextResponse.json(updatedBox[0])
   } catch (error) {
-    console.error("[v0] Error updating box:", error)
+    console.error("Error updating box:", error)
     return NextResponse.json({ error: "Failed to update box" }, { status: 500 })
   }
 }
@@ -51,7 +51,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     await db.delete(boxes).where(eq(boxes.id, id))
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Error deleting box:", error)
+    console.error("Error deleting box:", error)
     return NextResponse.json({ error: "Failed to delete box" }, { status: 500 })
   }
 }
