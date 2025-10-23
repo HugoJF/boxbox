@@ -20,9 +20,7 @@ export async function GET(request: Request) {
 
     if (search && search.trim().length > 0) {
       const pattern = `%${search.trim()}%`
-      conditions.push(
-        or(like(items.name, pattern), like(items.category, pattern), like(items.description, pattern)),
-      )
+      conditions.push(or(like(items.name, pattern), like(items.description, pattern)))
     }
 
     let itemQuery = db.select().from(items)
@@ -44,7 +42,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { boxId, name, category, description, quantity, image } = body
+    const { boxId, name, description, quantity, image } = body
 
     const imageValue = typeof image === "string" && image.trim().length > 0 ? image : ITEM_PLACEHOLDER_IMAGE
 
@@ -54,7 +52,6 @@ export async function POST(request: Request) {
         id: crypto.randomUUID(),
         boxId,
         name,
-        category: category || "Uncategorized",
         description: description || "",
         quantity: quantity || 1,
         image: imageValue,

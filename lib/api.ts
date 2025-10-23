@@ -89,7 +89,6 @@ export const deleteBox = async (boxId: string) => {
 
 export interface AnalyzeItemResponse {
   name?: string
-  category?: string
   description?: string
   quantity?: number
 }
@@ -99,7 +98,6 @@ export type AnalyzeItemProfile = "fast" | "balanced" | "high"
 export interface CreateItemPayload {
   boxId: string
   name: string
-  category: string
   description: string
   quantity: number
   image: string
@@ -107,7 +105,6 @@ export interface CreateItemPayload {
 
 export interface UpdateItemPayload {
   name: string
-  category: string
   description: string
   quantity: number
   boxId: string

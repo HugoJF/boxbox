@@ -42,7 +42,6 @@ export default function EditItemPage() {
   const queryClient = useQueryClient()
 
   const [name, setName] = useState("")
-  const [category, setCategory] = useState("")
   const [description, setDescription] = useState("")
   const [quantity, setQuantity] = useState(1)
   const [selectedBoxId, setSelectedBoxId] = useState("")
@@ -105,7 +104,6 @@ export default function EditItemPage() {
   useEffect(() => {
     if (item) {
       setName(item.name)
-      setCategory(item.category)
       setDescription(item.description)
       setQuantity(item.quantity)
       setSelectedBoxId(item.boxId)
@@ -134,7 +132,6 @@ export default function EditItemPage() {
     mutationFn: () =>
       updateItemApi(itemId, {
         name,
-        category,
         description,
         quantity,
         boxId: selectedBoxId,
@@ -224,9 +221,6 @@ export default function EditItemPage() {
     if (suggestion.name) {
       setName(suggestion.name)
     }
-    if (suggestion.category) {
-      setCategory(suggestion.category)
-    }
     if (typeof suggestion.quantity === "number" && Number.isFinite(suggestion.quantity) && suggestion.quantity > 0) {
       setQuantity(Math.max(1, Math.round(suggestion.quantity)))
     }
@@ -280,18 +274,6 @@ export default function EditItemPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter item name"
-              className="h-12 text-base"
-              disabled={updateItemMutation.isPending}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Input
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Enter category"
               className="h-12 text-base"
               disabled={updateItemMutation.isPending}
             />
@@ -409,7 +391,7 @@ export default function EditItemPage() {
                             <>
                               <p className="font-medium">{data.name ?? "Unknown"}</p>
                               <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                                Category: {data.category ?? "Uncategorized"} · Qty: {data.quantity ?? 1}
+                                Qty: {data.quantity ?? 1}
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 {(data.description && data.description.trim().length > 0

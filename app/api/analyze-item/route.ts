@@ -4,7 +4,6 @@ import { z } from "zod"
 
 const itemSchema = z.object({
   name: z.string().describe("The name or title of the item"),
-  category: z.string().describe("The category (e.g., Electronics, Food, Clothing, Tools, etc.)"),
   description: z.string().describe("A brief description of the item and its condition"),
   quantity: z.number().positive().describe("Estimated quantity visible in the image"),
 })
@@ -21,7 +20,6 @@ const JSON_SCHEMA_UNSUPPORTED_MODELS = new Set<string>(["openai/chatgpt-4o-lates
 const SCHEMA_PROMPT = `Respond with JSON using this exact shape:
 {
   "name": string,
-  "category": string,
   "description": string,
   "quantity": number
 }
@@ -48,7 +46,7 @@ export async function POST(req: Request) {
       content: [
         {
           type: "text" as const,
-          text: `Analyze this image and extract inventory information. Identify the item, categorize it, provide a brief description, and estimate the quantity visible. Use the "${selectedProfile}" profile guidelines: ${
+          text: `Analyze this image and extract inventory information. Identify the item, provide a brief description, and estimate the quantity visible. Use the "${selectedProfile}" profile guidelines: ${
             selectedProfile === "fast"
               ? "prioritize speed over completeness, returning concise but usable fields."
               : selectedProfile === "high"

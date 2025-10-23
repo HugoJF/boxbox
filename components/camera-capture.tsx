@@ -197,7 +197,6 @@ export function CameraCapture({onCapture, onCancel, boxId}: CameraCaptureProps) 
       await createItemMutation.mutateAsync({
         boxId,
         name: analysis?.name || "Unknown Item",
-        category: analysis?.category || "Uncategorized",
         description: analysis?.description || "",
         quantity: analysis?.quantity ?? 1,
         image: capturedImage,
@@ -213,7 +212,6 @@ export function CameraCapture({onCapture, onCancel, boxId}: CameraCaptureProps) 
         const newItem = await createItemMutation.mutateAsync({
           boxId,
           name: "New Item",
-          category: "Uncategorized",
           description: "",
           quantity: 1,
           image: capturedImage,

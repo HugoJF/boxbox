@@ -37,7 +37,6 @@ export function InventoryItem({ item, onDelete }: InventoryItemProps) {
 
           <div className="flex flex-1 flex-col justify-center min-w-0">
             <h3 className="font-semibold text-lg leading-tight">{item.name}</h3>
-            <p className="text-sm text-muted-foreground mt-1.5">{item.category}</p>
             <p className="text-sm text-muted-foreground mt-0.5">Qty: {item.quantity}</p>
           </div>
         </button>

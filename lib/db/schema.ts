@@ -16,7 +16,6 @@ export const items = sqliteTable("items", {
     .notNull()
     .references(() => boxes.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  category: text("category").notNull().default("Uncategorized"),
   description: text("description").notNull().default(""),
   quantity: integer("quantity").notNull().default(1),
   image: text("image").notNull(),

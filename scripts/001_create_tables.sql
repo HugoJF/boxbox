@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS items (
   id TEXT PRIMARY KEY,
   box_id TEXT NOT NULL,
   name TEXT NOT NULL,
-  category TEXT NOT NULL DEFAULT 'Uncategorized',
   description TEXT NOT NULL DEFAULT '',
   quantity INTEGER NOT NULL DEFAULT 1,
   image TEXT NOT NULL,

@@ -23,7 +23,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const { id } = await params
     const body = await request.json()
-    const { name, category, description, quantity, boxId } = body
+    const { name, description, quantity, boxId } = body
 
     // Get current item to check if box is changing
     const currentItem = await db.select().from(items).where(eq(items.id, id)).limit(1)
@@ -37,7 +37,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // Update item
     const updatedItem = await db
       .update(items)
-      .set({ name, category, description, quantity, boxId })
+      .set({ name, description, quantity, boxId })
       .where(eq(items.id, id))
       .returning()
 

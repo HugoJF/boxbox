@@ -155,12 +155,12 @@ export default function BoxDetailPage() {
 
   const filteredItems = useMemo(
     () =>
-      items.filter(
-        (item) =>
-          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.description.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
+      items.filter((item) => {
+        const query = searchQuery.toLowerCase()
+        return (
+          item.name.toLowerCase().includes(query) || item.description.toLowerCase().includes(query)
+        )
+      }),
     [items, searchQuery],
   )
 
