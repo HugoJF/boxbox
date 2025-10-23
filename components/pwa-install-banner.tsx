@@ -61,7 +61,7 @@ export function PWAInstallBanner() {
     <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
       <div className="flex w-full max-w-md items-center gap-3 rounded-xl border border-border/80 bg-background/95 p-4 shadow-lg backdrop-blur">
         <div className="flex flex-1 flex-col">
-          <span className="text-sm font-semibold">Install BoxBox</span>
+          <span className="text-sm font-semibold">Install boxbox.</span>
           <span className="text-xs text-muted-foreground">Install the app on this device for offline access.</span>
         </div>
         <div className="flex items-center gap-2">

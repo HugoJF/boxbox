@@ -8,15 +8,15 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "BoxBox",
+  title: "boxbox.",
   description: "Organize and track every item across your storage boxes.",
-  applicationName: "BoxBox",
+  applicationName: "boxbox.",
   manifest: "/manifest.webmanifest",
   themeColor: "#2563eb",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "BoxBox",
+    title: "boxbox.",
   },
   icons: {
     icon: [

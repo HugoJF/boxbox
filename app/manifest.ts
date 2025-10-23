@@ -5,8 +5,8 @@ const BACKGROUND_COLOR = "#0f172a"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "BoxBox",
-    short_name: "BoxBox",
+    name: "boxbox.",
+    short_name: "boxbox.",
     description: "Organize and track every item across your storage boxes.",
     start_url: "/",
     scope: "/",
