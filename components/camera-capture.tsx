@@ -92,8 +92,16 @@ export function CameraCapture({onCapture, onCancel, boxId}: CameraCaptureProps) 
     try {
       stopActiveStream()
 
+      const sizeConstraints = {
+        width: {min: 1024, ideal: 1920, max: 1920},
+        height: {min: 576, ideal: 1080, max: 1080},
+      }
+
       const constraints: MediaStreamConstraints = {
-        video: deviceId ? {deviceId: {exact: deviceId}} : {facingMode: {ideal: "environment"}},
+        video: deviceId ? {...sizeConstraints, deviceId: {exact: deviceId}} : {
+          ...sizeConstraints,
+          facingMode: {ideal: "environment"}
+        },
         audio: false,
       }
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
