@@ -3,7 +3,14 @@ import { db } from "@/lib/db"
 import { boxes } from "@/lib/db/schema"
 import { desc, like, or } from "drizzle-orm"
 
+import { authenticateRequest } from "@/lib/auth/server"
+
 export async function GET(request: Request) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get("search")
@@ -24,6 +31,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const body = await request.json()
     const { name, description, color } = body

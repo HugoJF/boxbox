@@ -4,9 +4,16 @@ import { db } from "@/lib/db"
 import { boxes, items } from "@/lib/db/schema"
 import { and, desc, eq, like, lt, or, sql } from "drizzle-orm"
 
+import { authenticateRequest } from "@/lib/auth/server"
+
 const ITEM_PLACEHOLDER_IMAGE = "/item-placeholder.svg"
 
 export async function GET(request: Request) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const boxId = searchParams.get("boxId")
@@ -87,6 +94,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const body = await request.json()
     const { boxId, name, description, quantity, image } = body

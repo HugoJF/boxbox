@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { LogoutButton } from "@/components/auth/logout-button"
+import { ProtectedClient } from "@/components/auth/protected-client"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +37,20 @@ import { Spinner } from "@/components/ui/spinner"
 const ITEM_PLACEHOLDER_IMAGE = "/item-placeholder.svg"
 
 export default function EditItemPage() {
+  return (
+    <ProtectedClient
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+          Loading item…
+        </div>
+      }
+    >
+      <EditItemPageContent />
+    </ProtectedClient>
+  )
+}
+
+function EditItemPageContent() {
   const params = useParams()
   const router = useRouter()
   const itemId = params.id as string
@@ -247,9 +263,17 @@ export default function EditItemPage() {
             </Button>
             <h1 className="text-lg font-semibold">Edit Item</h1>
           </div>
-          <Button size="icon" variant="ghost" onClick={() => setShowDeleteDialog(true)} disabled={deleteItemMutation.isPending}>
-            <Trash2 className="h-5 w-5 text-destructive" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <LogoutButton variant="ghost" size="sm" />
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={deleteItemMutation.isPending}
+            >
+              <Trash2 className="h-5 w-5 text-destructive" />
+            </Button>
+          </div>
         </div>
       </header>
 

@@ -3,7 +3,14 @@ import { db } from "@/lib/db"
 import { items, boxes } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 
+import { authenticateRequest } from "@/lib/auth/server"
+
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const { id } = await params
     const item = await db.select().from(items).where(eq(items.id, id)).limit(1)
@@ -20,6 +27,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const { id } = await params
     const body = await request.json()
@@ -64,6 +76,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const { id } = await params
 

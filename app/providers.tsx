@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { PWAInstallBanner } from "@/components/pwa-install-banner"
+import { Toaster } from "@/components/ui/sonner"
 
 export function Providers({ children }: PropsWithChildren) {
   const [queryClient] = useState(() => new QueryClient())
@@ -30,6 +31,7 @@ export function Providers({ children }: PropsWithChildren) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
+      <Toaster />
       <PWAInstallBanner />
     </QueryClientProvider>
   )

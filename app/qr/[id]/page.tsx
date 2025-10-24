@@ -8,9 +8,25 @@ import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { QRCodeDisplay } from "@/components/qr-code-display"
 import { boxQueryOptions } from "@/lib/api"
+import { LogoutButton } from "@/components/auth/logout-button"
+import { ProtectedClient } from "@/components/auth/protected-client"
 import { toast } from "sonner"
 
 export default function QRCodePage() {
+  return (
+    <ProtectedClient
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+          Loading QR code…
+        </div>
+      }
+    >
+      <QRCodePageContent />
+    </ProtectedClient>
+  )
+}
+
+function QRCodePageContent() {
   const params = useParams()
   const router = useRouter()
   const boxId = params.id as string
@@ -53,6 +69,7 @@ export default function QRCodePage() {
             </Button>
             <h1 className="text-lg font-semibold">QR Code</h1>
           </div>
+          <LogoutButton variant="ghost" size="sm" />
         </div>
       </header>
 

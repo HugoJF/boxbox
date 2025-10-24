@@ -4,7 +4,14 @@ import { db } from "@/lib/db"
 import { boxes, items } from "@/lib/db/schema"
 import { desc, eq } from "drizzle-orm"
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+import { authenticateRequest } from "@/lib/auth/server"
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const { id } = params
     const box = await db.select().from(boxes).where(eq(boxes.id, id)).limit(1)
@@ -27,6 +34,11 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const { id } = params
     const body = await request.json()
@@ -45,7 +57,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const { id } = params
     await db.delete(boxes).where(eq(boxes.id, id))

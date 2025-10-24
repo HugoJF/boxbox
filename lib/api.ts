@@ -8,7 +8,18 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (typeof window !== "undefined" && error?.response?.status === 401) {
+      window.location.href = "/login"
+    }
+    return Promise.reject(error)
+  },
+)
 
 // Type-safe wrapper that extracts data
 const apiGet = <T>(url: string, config?: Parameters<typeof api.get>[1]) =>

@@ -2,6 +2,8 @@ import { generateObject, generateText } from "ai"
 import { openrouter } from "@openrouter/ai-sdk-provider"
 import { z } from "zod"
 
+import { authenticateRequest } from "@/lib/auth/server"
+
 const itemSchema = z.object({
   name: z.string().describe("The name or title of the item"),
   description: z.string().describe("A brief description of the item and its condition"),
@@ -31,6 +33,11 @@ const isAnalyzeProfile = (profile: unknown): profile is AnalyzeItemProfile =>
   profile === "fast" || profile === "balanced" || profile === "high"
 
 export async function POST(req: Request) {
+  const authResult = await authenticateRequest(req)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     const { image, profile } = await req.json()
 

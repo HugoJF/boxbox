@@ -2,7 +2,14 @@ import { db } from "@/lib/db"
 import { sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
-export async function POST() {
+import { authenticateRequest } from "@/lib/auth/server"
+
+export async function POST(request: Request) {
+  const authResult = await authenticateRequest(request)
+  if ("response" in authResult) {
+    return authResult.response
+  }
+
   try {
     console.log("Initializing database tables...")
 

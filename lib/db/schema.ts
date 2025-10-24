@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm"
 import { text, integer, sqliteTable } from "drizzle-orm/sqlite-core"
 
+import { accounts, sessions, users, verifications } from "./better-auth-schema"
+
 export const boxes = sqliteTable("boxes", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -26,3 +28,5 @@ export type Box = typeof boxes.$inferSelect
 export type NewBox = typeof boxes.$inferInsert
 export type Item = typeof items.$inferSelect
 export type NewItem = typeof items.$inferInsert
+
+export { accounts, sessions, users, verifications }

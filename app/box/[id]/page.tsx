@@ -22,6 +22,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { LogoutButton } from "@/components/auth/logout-button"
+import { ProtectedClient } from "@/components/auth/protected-client"
 import type { Box, Item } from "@/lib/db/schema"
 import {
   boxQueryOptions,
@@ -34,6 +36,20 @@ import { toast } from "sonner"
 type BoxWithItems = Box & { items: Item[] }
 
 export default function BoxDetailPage() {
+  return (
+    <ProtectedClient
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+          Loading box…
+        </div>
+      }
+    >
+      <BoxDetailPageContent />
+    </ProtectedClient>
+  )
+}
+
+function BoxDetailPageContent() {
   const params = useParams()
   const router = useRouter()
   const boxId = params.id as string
@@ -194,20 +210,23 @@ export default function BoxDetailPage() {
               <p className="text-xs text-muted-foreground">{items.length} items</p>
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-12 w-12">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={handleShowQR}>Show QR Code</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowEditDialog(true)}>Edit Box</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
-                Delete Box
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <LogoutButton variant="ghost" size="sm" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" className="h-12 w-12">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleShowQR}>Show QR Code</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowEditDialog(true)}>Edit Box</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
+                  Delete Box
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 

@@ -7,6 +7,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { BoxIcon, Camera, ChevronRight, Plus, Search } from "lucide-react"
 
 import { BoxCard } from "@/components/box-card"
+import { LogoutButton } from "@/components/auth/logout-button"
+import { ProtectedClient } from "@/components/auth/protected-client"
 import { CameraCapture } from "@/components/camera-capture"
 import { CreateBoxDialog } from "@/components/create-box-dialog"
 import { EmptyState } from "@/components/empty-state"
@@ -24,6 +26,20 @@ import {
 } from "@/lib/api"
 
 export default function InventoryPage() {
+  return (
+    <ProtectedClient
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+          Loading your inventory…
+        </div>
+      }
+    >
+      <InventoryPageContent />
+    </ProtectedClient>
+  )
+}
+
+function InventoryPageContent() {
   const queryClient = useQueryClient()
   const [showCamera, setShowCamera] = useState(false)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -152,6 +168,7 @@ export default function InventoryPage() {
               <Camera className="h-5 w-5" />
               Add Item
             </Button>
+            <LogoutButton variant="ghost" size="sm" />
           </div>
         </div>
       </header>
